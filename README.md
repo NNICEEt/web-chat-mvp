@@ -260,5 +260,5 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] Inbound use case และ webhook route
 - [x] Conversation และ message read APIs
 - [x] Outbound LINE client, use case และ API
-- [ ] Agent inbox UI และ short polling
+- [x] Agent inbox UI และ short polling
 - [ ] Migration, deployment และ LINE end-to-end verification
