@@ -254,7 +254,7 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] ออกแบบ architecture และ responsibilities
 - [x] กำหนด environment contract และ Prisma foundation
 - [x] ตั้งค่า Vitest
-- [ ] LINE signature verifier
+- [x] LINE signature verifier
 - [ ] LINE webhook adapter
 - [ ] Repositories
 - [ ] Inbound use case และ webhook route
