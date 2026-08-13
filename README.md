@@ -1,36 +1,264 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web Chat
 
-## Getting Started
+## MVP Scope
 
-First, run the development server:
+สิ่งที่รวมอยู่ใน MVP:
+
+- รับ LINE webhook และ verify signature
+- รองรับข้อความประเภท text
+- ป้องกันการ process webhook event ซ้ำ
+- persist ข้อมูล User, Conversation และ Message
+- แสดง conversation list และ message history
+- ส่งข้อความตอบกลับผ่าน LINE Messaging API
+- บันทึก outbound message status
+- sync ข้อมูลบน browser ด้วย short polling
+- ใช้ PostgreSQL บน Neon และ deploy application บน Vercel
+
+สิ่งที่ยังไม่อยู่ในขอบเขต ได้แก่ authentication, การมอบหมายหลายเจ้าหน้าที่, ข้อความประเภท media, read receipt, typing indicator, search, queue, retry worker และ WebSocket/SSE
+
+## Tech Stack
+
+| ส่วนงาน | เทคโนโลยี |
+| --- | --- |
+| Frontend | Next.js 16 App Router, React 19, Tailwind CSS 4 |
+| Backend | Next.js Route Handlers |
+| Language | TypeScript |
+| ORM | Prisma 7 |
+| Database | PostgreSQL บน Neon |
+| PostgreSQL driver | `pg` ผ่าน `@prisma/adapter-pg` |
+| Messaging provider | LINE Messaging API |
+| Browser synchronization | Short polling |
+| Unit testing | Vitest |
+| Deployment | Vercel |
+
+## Architecture
+
+Next.js application เป็นศูนย์กลางระหว่างหน้าเว็บของเจ้าหน้าที่ LINE และ PostgreSQL โดย frontend จะไม่ติดต่อ LINE โดยตรง และไม่รับข้อมูลจาก webhook โดยตรง
+
+```mermaid
+flowchart LR
+    Customer[LINE Customer]
+    LINE[LINE Platform]
+    Webhook[Webhook Route]
+    API[Conversation APIs]
+    UI[Agent Web Inbox]
+    UseCases[Use Cases]
+    LineClient[LINE Client]
+    Repositories[Repositories]
+    DB[(Neon PostgreSQL)]
+
+    Customer <--> LINE
+    LINE -->|Webhook| Webhook
+    Webhook --> UseCases
+    UI <--> API
+    API --> UseCases
+    UseCases --> Repositories
+    Repositories --> DB
+    UseCases --> LineClient
+    LineClient -->|Push message| LINE
+```
+
+Database เป็นแหล่งข้อมูลหลักของระบบ:
+
+```text
+LINE webhook -> backend -> database -> API polling -> agent UI
+```
+
+### Responsibilities
+
+| ส่วน | Responsibility |
+| --- | --- |
+| `src/app` | UI และ HTTP transport |
+| `src/use-cases` | Application workflows และ business decisions |
+| `src/integrations/line` | Integration และ data mapping ระหว่างระบบกับ LINE |
+| `src/repositories` | อ่านและ persist ข้อมูล |
+| `src/db` | Prisma configuration และ PostgreSQL connection |
+| `src/models` | Internal models ที่ไม่ผูกกับ LINE โดยตรง |
+
+ทิศทาง dependency หลัก:
+
+```text
+Route Handler -> Use Case -> Repository -> Prisma -> PostgreSQL
+                         \-> LINE Client -> LINE Platform
+```
+
+## Core Workflows
+
+### Inbound Message
+
+```text
+LINE webhook
+  -> verify signature
+  -> map เป็น internal event
+  -> deduplicate event
+  -> persist User, Conversation และ Message
+  -> UI sync ข้อมูลผ่าน polling
+```
+
+### Outbound Message
+
+```text
+Agent ส่งข้อความ
+  -> persist ข้อความเป็น PENDING
+  -> ส่งผ่าน LINE Messaging API
+  -> update เป็น SENT หรือ FAILED
+```
+
+การเรียก LINE API จะอยู่นอก database transaction เพื่อไม่ให้เปิด transaction ค้างระหว่างรอ external service
+
+## Domain Model
+
+```mermaid
+erDiagram
+    USER ||--o{ CONVERSATION : has
+    CONVERSATION ||--o{ MESSAGE : contains
+
+    USER {
+      string id PK
+      string lineUserId UK
+    }
+
+    CONVERSATION {
+      string id PK
+      string userId FK
+      string status
+      datetime lastMessageAt
+    }
+
+    MESSAGE {
+      string id PK
+      string conversationId FK
+      string direction
+      string type
+      string text
+      string providerMessageId UK
+      string webhookEventId UK
+      string status
+      datetime occurredAt
+    }
+```
+
+Domain invariants ที่สำคัญ:
+
+- ผู้ใช้หนึ่งคนมีประวัติหลายบทสนทนาได้ แต่มีบทสนทนาที่ `ACTIVE` ได้ครั้งละหนึ่งรายการ
+- ข้อความขาเข้าใช้สถานะ `RECEIVED`
+- ข้อความขาออกเปลี่ยนจาก `PENDING` เป็น `SENT` หรือ `FAILED`
+- `webhookEventId` ใช้ deduplicate event
+- `lastMessageAt` ใช้ sort conversation list ตาม activity ล่าสุด
+- MVP รองรับเฉพาะข้อความประเภท `TEXT`
+
+## API Surface
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/line/webhook` | รับ LINE webhook |
+| `GET` | `/api/conversations` | แสดง conversation list |
+| `GET` | `/api/conversations/:conversationId/messages` | แสดง message history |
+| `POST` | `/api/conversations/:conversationId/messages` | ส่งข้อความตอบกลับจาก Agent |
+
+## Project Structure
+
+```text
+prisma/
+└── schema.prisma
+
+src/
+├── app/
+│   ├── api/
+│   │   ├── line/webhook/route.ts
+│   │   └── conversations/
+│   │       ├── route.ts
+│   │       └── [conversationId]/messages/route.ts
+│   └── ... frontend pages and components
+├── db/
+│   ├── client.ts
+│   └── generated/prisma/
+├── integrations/line/
+├── models/
+├── repositories/
+└── use-cases/
+```
+
+โครงสร้างนี้คือเป้าหมายที่ผ่านการออกแบบแล้ว แต่ directory จะถูกเพิ่มทีละส่วนตาม checklist ที่ผ่านการรีวิว
+
+## Development Setup
+
+สิ่งที่ต้องมี:
+
+- Node.js 20.19 ขึ้นไป
+- PostgreSQL database
+- LINE Messaging API channel
+
+ติดตั้ง dependencies:
+
+```bash
+npm install
+```
+
+คัดลอกไฟล์ environment variables และใส่ credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+ตัวแปรที่ระบบต้องใช้:
+
+```dotenv
+DATABASE_URL="postgresql://..."
+LINE_CHANNEL_SECRET="..."
+LINE_CHANNEL_ACCESS_TOKEN="..."
+```
+
+ตัวแปรเหล่านี้ใช้เฉพาะฝั่ง server ห้ามเติม `NEXT_PUBLIC_` และห้ามนำไปใช้ใน browser code
+
+สร้าง Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+สร้าง development migration หลังจาก database change ผ่าน review:
+
+```bash
+npm run prisma:migrate -- --name init
+```
+
+เริ่ม development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Testing และ Verification
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run prisma:validate
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Automated tests ใน assignment นี้เน้นเฉพาะ:
 
-## Learn More
+- LINE signature verifier
+- LINE webhook adapter
+- Use cases
 
-To learn more about Next.js, take a look at the following resources:
+Repository, Prisma และ live database integration tests ยังไม่อยู่ใน scope โดยจะ verify database behavior ผ่าน migration และ manual/end-to-end testing ที่จำเป็น
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Implementation Status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+โปรเจกต์ใช้ review gate โดยทำและ review ทีละ checklist ก่อน commit และเริ่มส่วนถัดไป
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] ออกแบบ architecture และ responsibilities
+- [x] กำหนด environment contract และ Prisma foundation
+- [x] ตั้งค่า Vitest
+- [ ] LINE signature verifier
+- [ ] LINE webhook adapter
+- [ ] Repositories
+- [ ] Inbound use case และ webhook route
+- [ ] Conversation และ message read APIs
+- [ ] Outbound LINE client, use case และ API
+- [ ] Agent inbox UI และ short polling
+- [ ] Migration, deployment และ LINE end-to-end verification
