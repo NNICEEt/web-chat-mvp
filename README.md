@@ -257,7 +257,7 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] LINE signature verifier
 - [x] LINE webhook adapter
 - [x] Repositories
-- [ ] Inbound use case และ webhook route
+- [x] Inbound use case และ webhook route
 - [ ] Conversation และ message read APIs
 - [ ] Outbound LINE client, use case และ API
 - [ ] Agent inbox UI และ short polling
