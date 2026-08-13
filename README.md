@@ -256,7 +256,7 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] ตั้งค่า Vitest
 - [x] LINE signature verifier
 - [x] LINE webhook adapter
-- [ ] Repositories
+- [x] Repositories
 - [ ] Inbound use case และ webhook route
 - [ ] Conversation และ message read APIs
 - [ ] Outbound LINE client, use case และ API
