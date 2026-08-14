@@ -204,10 +204,13 @@ cp .env.example .env.local
 ตัวแปรที่ระบบต้องใช้:
 
 ```dotenv
-DATABASE_URL="postgresql://..."
+DATABASE_URL="postgresql://...-pooler..."
+DIRECT_URL="postgresql://..."
 LINE_CHANNEL_SECRET="..."
 LINE_CHANNEL_ACCESS_TOKEN="..."
 ```
+
+`DATABASE_URL` ใช้ pooled connection สำหรับ application runtime ส่วน `DIRECT_URL` ใช้ direct connection สำหรับ Prisma commands โดย local environment สามารถใช้ `DATABASE_URL` แทนได้หากไม่ได้แยก connection ทั้งสองแบบ
 
 ตัวแปรเหล่านี้ใช้เฉพาะฝั่ง server ห้ามเติม `NEXT_PUBLIC_` และห้ามนำไปใช้ใน browser code
 
@@ -228,6 +231,25 @@ npm run prisma:migrate -- --name init
 ```bash
 npm run dev
 ```
+
+## Production Deployment
+
+กำหนด Environment Variables ต่อไปนี้ใน Vercel Production:
+
+- `DATABASE_URL` เป็น Neon pooled connection
+- `DIRECT_URL` เป็น Neon direct connection
+- `LINE_CHANNEL_SECRET`
+- `LINE_CHANNEL_ACCESS_TOKEN`
+
+ตั้ง Vercel Build Command เป็น:
+
+```bash
+npm run vercel-build
+```
+
+คำสั่งนี้จะ generate Prisma Client, apply pending migrations ด้วย `prisma migrate deploy` และ build Next.js ตามลำดับ หาก migration หรือ build ไม่ผ่าน deployment จะหยุดทันที
+
+Preview Deployment ต้องใช้ Neon branch หรือ database แยก ห้ามกำหนด `DIRECT_URL` ของ production ให้ Preview Environment
 
 ## Testing และ Verification
 
@@ -262,4 +284,5 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] Outbound LINE client, use case และ API
 - [x] Agent inbox UI และ short polling
 - [x] Initial database migration
+- [x] Production deployment configuration
 - [ ] Vercel deployment, production environment และ LINE end-to-end verification
