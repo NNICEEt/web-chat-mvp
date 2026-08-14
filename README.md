@@ -42,32 +42,7 @@
 
 ![Component Architecture](docs/images/backend-component-architecture.png)
 
-### Implementation Architecture
-
-```mermaid
-flowchart LR
-    Customer[LINE Customer]
-    LINE[LINE Platform]
-    Webhook[Webhook Route]
-    API[Conversation APIs]
-    UI[Agent Web Inbox]
-    UseCases[Use Cases]
-    LineClient[LINE Client]
-    Repositories[Repositories]
-    DB[(Neon PostgreSQL)]
-
-    Customer <--> LINE
-    LINE -->|Webhook| Webhook
-    Webhook --> UseCases
-    UI <--> API
-    API --> UseCases
-    UseCases --> Repositories
-    Repositories --> DB
-    UseCases --> LineClient
-    LineClient -->|Profile / Push message| LINE
-```
-
-Database เป็นแหล่งข้อมูลหลักของระบบ:
+Database เป็น source-of-truth flow:
 
 ```text
 LINE webhook -> backend -> database -> API polling -> agent UI
