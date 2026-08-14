@@ -18,7 +18,7 @@ import type {
 import { ChatPanel } from "./components/chat-panel";
 import { ConversationSidebar } from "./components/conversation-sidebar";
 
-const POLLING_INTERVAL_MS = 3_000;
+const POLLING_INTERVAL_MS = 5_000;
 
 export function ChatInbox() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -50,13 +50,13 @@ export function ChatInbox() {
       const data = (await response.json()) as ConversationsResponse;
       setConversations(data.conversations);
       setSelectedConversationId((currentId) => {
+        if (!currentId) return null;
+
         const stillExists = data.conversations.some(
           (conversation) => conversation.conversationId === currentId,
         );
 
-        return stillExists
-          ? currentId
-          : (data.conversations[0]?.conversationId ?? null);
+        return stillExists ? currentId : null;
       });
       setConversationError(null);
     } catch (error) {

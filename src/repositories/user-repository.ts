@@ -14,3 +14,17 @@ export function createUser(database: DatabaseContext, lineUserId: string) {
     data: { lineUserId },
   });
 }
+
+export function updateUserProfileByLineUserId(
+  database: DatabaseContext,
+  lineUserId: string,
+  profile: {
+    displayName: string;
+    pictureUrl: string | null;
+  },
+) {
+  return database.user.update({
+    where: { lineUserId },
+    data: profile,
+  });
+}

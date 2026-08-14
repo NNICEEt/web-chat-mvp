@@ -2,6 +2,9 @@ export type Conversation = {
   conversationId: string;
   status: "ACTIVE" | "CLOSED";
   lastMessageAt: string | null;
+  latestMessage: {
+    text: string;
+  } | null;
   user: {
     displayName: string | null;
     pictureUrl: string | null;

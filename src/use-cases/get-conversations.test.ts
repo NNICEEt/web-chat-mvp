@@ -26,6 +26,7 @@ describe("getConversations", () => {
         id: "recent-conversation-id",
         status: "ACTIVE",
         lastMessageAt: new Date("2026-08-14T09:00:00.000Z"),
+        messages: [{ text: "Latest customer message" }],
         user: {
           lineUserId: "U-not-exposed",
           displayName: "Alice",
@@ -36,6 +37,7 @@ describe("getConversations", () => {
         id: "older-conversation-id",
         status: "CLOSED",
         lastMessageAt: null,
+        messages: [],
         user: {
           lineUserId: "U-also-not-exposed",
           displayName: null,
@@ -49,6 +51,9 @@ describe("getConversations", () => {
         conversationId: "recent-conversation-id",
         status: "ACTIVE",
         lastMessageAt: "2026-08-14T09:00:00.000Z",
+        latestMessage: {
+          text: "Latest customer message",
+        },
         user: {
           displayName: "Alice",
           pictureUrl: "https://example.com/alice.jpg",
@@ -58,6 +63,7 @@ describe("getConversations", () => {
         conversationId: "older-conversation-id",
         status: "CLOSED",
         lastMessageAt: null,
+        latestMessage: null,
         user: {
           displayName: null,
           pictureUrl: null,

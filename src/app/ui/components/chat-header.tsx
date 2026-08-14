@@ -21,7 +21,11 @@ export function ChatHeader({
       >
         <BackIcon />
       </button>
-      <Avatar name={name} compact />
+      <Avatar
+        name={name}
+        pictureUrl={conversation.user.pictureUrl}
+        compact
+      />
       <div className="min-w-0">
         <h2 className="truncate font-semibold text-[#1d2921]">{name}</h2>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#7b887f]">

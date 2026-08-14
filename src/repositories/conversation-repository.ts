@@ -38,7 +38,14 @@ export function findConversationByIdWithUser(
 
 export function listConversations(database: DatabaseContext) {
   return database.conversation.findMany({
-    include: { user: true },
+    include: {
+      user: true,
+      messages: {
+        select: { text: true },
+        orderBy: { occurredAt: "desc" },
+        take: 1,
+      },
+    },
     orderBy: [
       { lastMessageAt: { sort: "desc", nulls: "last" } },
       { createdAt: "desc" },

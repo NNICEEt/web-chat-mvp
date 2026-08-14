@@ -94,7 +94,7 @@ function ConversationItem({
           : "hover:bg-[#f1f5f1]"
       }`}
     >
-      <Avatar name={name} />
+      <Avatar name={name} pictureUrl={conversation.user.pictureUrl} />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-3">
           <span className="truncate text-[15px] font-semibold text-[#202a23]">
@@ -106,7 +106,7 @@ function ConversationItem({
         </span>
         <span className="mt-1 flex items-center justify-between gap-2">
           <span className="truncate text-sm text-[#758179]">
-            LINE conversation
+            {conversation.latestMessage?.text ?? "ยังไม่มีข้อความ"}
           </span>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
