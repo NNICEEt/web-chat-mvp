@@ -34,6 +34,16 @@
 
 ## Architecture
 
+### High-level Architecture
+
+![High-level Architecture](docs/images/high-level-architecture.png)
+
+### Component Architecture
+
+![Component Architecture](docs/images/backend-component-architecture.png)
+
+### Implementation Architecture
+
 ```mermaid
 flowchart LR
     Customer[LINE Customer]
