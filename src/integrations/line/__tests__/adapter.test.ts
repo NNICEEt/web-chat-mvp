@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { adaptLineWebhook } from "./adapter";
+import { adaptLineWebhook } from "../adapter";
 
 const textMessageEvent = {
   type: "message",

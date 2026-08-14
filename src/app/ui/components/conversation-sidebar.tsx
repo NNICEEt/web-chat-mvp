@@ -43,7 +43,7 @@ export function ConversationSidebar({
         </div>
         <div className="mt-5 flex items-center gap-2 rounded-xl border border-[#e2e8e3] bg-white px-3.5 py-2.5 text-sm text-[#7a887f]">
           <span className="h-2 w-2 rounded-full bg-[#06c755]" />
-          Syncing with LINE every 3 seconds
+          Syncing with LINE every 5 seconds
         </div>
       </header>
 

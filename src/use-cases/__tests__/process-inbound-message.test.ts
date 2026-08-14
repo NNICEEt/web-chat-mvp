@@ -35,7 +35,7 @@ vi.mock("@/repositories/conversation-repository", () => ({
   updateConversationLastMessageAt: mocks.updateConversationLastMessageAt,
 }));
 
-import { processInboundMessage } from "./process-inbound-message";
+import { processInboundMessage } from "../process-inbound-message";
 
 const event = {
   providerUserId: "U4af4980629b14c0872cc3e7c54fb9e11",

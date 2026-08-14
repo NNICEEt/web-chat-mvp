@@ -39,7 +39,7 @@ import {
   ConversationNotFoundError,
   InvalidMessageTextError,
   sendMessage,
-} from "./send-message";
+} from "../send-message";
 
 const transaction = { transaction: true } as unknown as DatabaseContext;
 const conversation = {

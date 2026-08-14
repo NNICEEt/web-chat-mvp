@@ -8,6 +8,7 @@
 - รองรับข้อความประเภท text
 - ป้องกันการ process webhook event ซ้ำ
 - persist ข้อมูล User, Conversation และ Message
+- sync ชื่อและรูป profile จาก LINE
 - แสดง conversation list และ message history
 - ส่งข้อความตอบกลับผ่าน LINE Messaging API
 - บันทึก outbound message status
@@ -27,13 +28,11 @@
 | Database | PostgreSQL บน Neon |
 | PostgreSQL driver | `pg` ผ่าน `@prisma/adapter-pg` |
 | Messaging provider | LINE Messaging API |
-| Browser synchronization | Short polling |
+| Browser synchronization | Short polling ทุก 5 วินาที |
 | Unit testing | Vitest |
 | Deployment | Vercel |
 
 ## Architecture
-
-Next.js application เป็นศูนย์กลางระหว่างหน้าเว็บของเจ้าหน้าที่ LINE และ PostgreSQL โดย frontend จะไม่ติดต่อ LINE โดยตรง และไม่รับข้อมูลจาก webhook โดยตรง
 
 ```mermaid
 flowchart LR
@@ -55,7 +54,7 @@ flowchart LR
     UseCases --> Repositories
     Repositories --> DB
     UseCases --> LineClient
-    LineClient -->|Push message| LINE
+    LineClient -->|Profile / Push message| LINE
 ```
 
 Database เป็นแหล่งข้อมูลหลักของระบบ:
@@ -92,6 +91,8 @@ LINE webhook
   -> map เป็น internal event
   -> deduplicate event
   -> persist User, Conversation และ Message
+  -> response webhook
+  -> sync LINE profile แบบ background
   -> UI sync ข้อมูลผ่าน polling
 ```
 
@@ -104,7 +105,7 @@ Agent ส่งข้อความ
   -> update เป็น SENT หรือ FAILED
 ```
 
-การเรียก LINE API จะอยู่นอก database transaction เพื่อไม่ให้เปิด transaction ค้างระหว่างรอ external service
+การเรียก LINE API จะอยู่นอก database transaction เพื่อไม่ให้เปิด transaction ค้างระหว่างรอ external service โดย profile sync จะทำหลัง response webhook และ failure จะไม่กระทบ inbound message ที่ persist สำเร็จแล้ว
 
 ## Domain Model
 
@@ -116,6 +117,8 @@ erDiagram
     USER {
       string id PK
       string lineUserId UK
+      string displayName
+      string pictureUrl
     }
 
     CONVERSATION {
@@ -160,6 +163,7 @@ Domain invariants ที่สำคัญ:
 
 ```text
 prisma/
+├── migrations/
 └── schema.prisma
 
 src/
@@ -169,17 +173,20 @@ src/
 │   │   └── conversations/
 │   │       ├── route.ts
 │   │       └── [conversationId]/messages/route.ts
-│   └── ... frontend pages and components
+│   └── ui/
+│       ├── components/
+│       ├── shared/
+│       └── utils/
 ├── db/
 │   ├── client.ts
 │   └── generated/prisma/
 ├── integrations/line/
+│   └── __tests__/
 ├── models/
 ├── repositories/
 └── use-cases/
+    └── __tests__/
 ```
-
-โครงสร้างนี้คือเป้าหมายที่ผ่านการออกแบบแล้ว แต่ directory จะถูกเพิ่มทีละส่วนตาม checklist ที่ผ่านการรีวิว
 
 ## Development Setup
 
@@ -198,7 +205,7 @@ npm install
 คัดลอกไฟล์ environment variables และใส่ credentials:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
 ตัวแปรที่ระบบต้องใช้:
@@ -223,7 +230,7 @@ npm run prisma:generate
 สร้าง development migration หลังจาก database change ผ่าน review:
 
 ```bash
-npm run prisma:migrate -- --name init
+npm run prisma:migrate -- --name <migration-name>
 ```
 
 เริ่ม development server:
@@ -251,6 +258,12 @@ npm run vercel-build
 
 Preview Deployment ต้องใช้ Neon branch หรือ database แยก ห้ามกำหนด `DIRECT_URL` ของ production ให้ Preview Environment
 
+หลัง deploy ให้ตั้ง LINE webhook URL เป็น:
+
+```text
+https://<vercel-domain>/api/line/webhook
+```
+
 ## Testing และ Verification
 
 ```bash
@@ -261,7 +274,7 @@ npm test
 npm run build
 ```
 
-Automated tests ใน assignment นี้เน้นเฉพาะ:
+Automated tests ของโปรเจกต์เน้นเฉพาะ:
 
 - LINE signature verifier
 - LINE webhook adapter
@@ -285,4 +298,5 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] Agent inbox UI และ short polling
 - [x] Initial database migration
 - [x] Production deployment configuration
-- [ ] Vercel deployment, production environment และ LINE end-to-end verification
+- [x] Vercel deployment และ production environment
+- [x] LINE end-to-end verification

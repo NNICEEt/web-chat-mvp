@@ -13,7 +13,7 @@ vi.mock("@/repositories/message-repository", () => ({
   listMessagesByConversationId: mocks.listMessagesByConversationId,
 }));
 
-import { getConversationMessages } from "./get-conversation-messages";
+import { getConversationMessages } from "../get-conversation-messages";
 
 describe("getConversationMessages", () => {
   beforeEach(() => {

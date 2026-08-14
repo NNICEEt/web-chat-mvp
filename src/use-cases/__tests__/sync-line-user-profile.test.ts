@@ -18,7 +18,7 @@ vi.mock("@/repositories/user-repository", () => ({
   updateUserProfileByLineUserId: mocks.updateUserProfileByLineUserId,
 }));
 
-import { syncLineUserProfile } from "./sync-line-user-profile";
+import { syncLineUserProfile } from "../sync-line-user-profile";
 
 describe("syncLineUserProfile", () => {
   beforeEach(() => {

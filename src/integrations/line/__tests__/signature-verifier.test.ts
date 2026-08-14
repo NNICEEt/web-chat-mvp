@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { verifyLineSignature } from "./signature-verifier";
+import { verifyLineSignature } from "../signature-verifier";
 
 const officialFixture = {
   rawBody:
