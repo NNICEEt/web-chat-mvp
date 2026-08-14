@@ -261,4 +261,5 @@ Repository, Prisma และ live database integration tests ยังไม่�
 - [x] Conversation และ message read APIs
 - [x] Outbound LINE client, use case และ API
 - [x] Agent inbox UI และ short polling
-- [ ] Migration, deployment และ LINE end-to-end verification
+- [x] Initial database migration
+- [ ] Vercel deployment, production environment และ LINE end-to-end verification
